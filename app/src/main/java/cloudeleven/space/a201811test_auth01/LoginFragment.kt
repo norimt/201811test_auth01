@@ -1,5 +1,6 @@
 package cloudeleven.space.a201811test_auth01
 
+import android.arch.lifecycle.Observer
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
@@ -10,7 +11,6 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import cloudeleven.space.a201811test_auth01.viewmodel.LoginViewModel
 import cloudeleven.space.a201811test_auth01.models.LoginModel
-import io.reactivex.functions.Consumer
 
 class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
     private lateinit var loginViewModel: LoginViewModel
@@ -35,19 +35,14 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
         return view
     }
     private fun listenToObservables() {
-        loginViewModel.tokenObservable.subscribe(Consumer {
+        loginViewModel.getTokenObservable().observe(this, Observer {
 //            hideProgressBar()
-            onTokenRetrievedListener?.onTokenRetrieved(it)
+            onTokenRetrievedListener?.onTokenRetrieved(it!!)
         })
-        loginViewModel.tokenErrorObservable.subscribe(Consumer {
+        loginViewModel.getTokenErrorObservable().observe(this, Observer {
 //            hideProgressBar()
-            showErrorMessage(it.message())
+            showErrorMessage(it!!.message())
         })
-    }
-
-    override fun onStop() {
-        super.onStop()
-        loginViewModel.cancelNetworkConnections()
     }
 
     private fun loadLoginPage(view: View) {

@@ -12,25 +12,23 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 class LoginModel() {
-    private var retrofit: Retrofit? = null
+    private val retrofit: Retrofit
+
+    init {
+        val loggingInterceptor = HttpLoggingInterceptor()
+        loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
+        val client = OkHttpClient.Builder().addInterceptor(loggingInterceptor).build()
+        retrofit = Retrofit.Builder().baseUrl("https://qiita.com/").addConverterFactory(
+            GsonConverterFactory.create()).addCallAdapterFactory(RxJava2CallAdapterFactory.create()).client(client).build()
+    }
 
     fun requestTokenByCode(code: String): Single<AccessTokenEntity>? {
         val clientId = App.applicationContext().resources.getString(R.string.client_id)
         val clientSecret = App.applicationContext().resources.getString(R.string.client_secret)
         val request = AccessTokenRequestModel(clientId, clientSecret, code)
-        return getRetrofit()?.create(AuthService::class.java)?.accessTokens(request)
+        return retrofit.create(AuthService::class.java)?.accessTokens(request)
     }
 
-    private fun getRetrofit(): Retrofit? {
-        if (retrofit == null) {
-            val loggingInterceptor = HttpLoggingInterceptor()
-            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
-            val client = OkHttpClient.Builder().addInterceptor(loggingInterceptor).build()
-            retrofit = Retrofit.Builder().baseUrl("https://qiita.com/").addConverterFactory(
-                GsonConverterFactory.create()).addCallAdapterFactory(RxJava2CallAdapterFactory.create()).client(client).build()
-        }
-        return retrofit
-    }
 
     interface AuthService {
         @POST("api/v2/access_tokens")

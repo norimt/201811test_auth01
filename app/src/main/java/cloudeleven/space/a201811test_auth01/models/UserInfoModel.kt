@@ -12,7 +12,18 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 
 class UserInfoModel() {
-    private var retrofit: Retrofit? = null
+    private val retrofit: Retrofit
+
+    init {
+        val loggingInterceptor = HttpLoggingInterceptor()
+        loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
+        val client = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .addInterceptor(BearerAuthenticationInterceptor())
+            .build()
+        retrofit = Retrofit.Builder().baseUrl("https://qiita.com/").addConverterFactory(
+            GsonConverterFactory.create()).addCallAdapterFactory(RxJava2CallAdapterFactory.create()).client(client).build()
+    }
 
     class BearerAuthenticationInterceptor : Interceptor {
         override fun intercept(chain: Interceptor.Chain?): Response? {
@@ -26,21 +37,7 @@ class UserInfoModel() {
         }
     }
     fun getAuthenticatedUser(): Single<UserInfoEntity>? {
-        return getRetrofit()?.create(UserInfoService::class.java)?.authenticatedUser()
-    }
-
-    private fun getRetrofit(): Retrofit? {
-        if (retrofit == null) {
-            val loggingInterceptor = HttpLoggingInterceptor()
-            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
-            val client = OkHttpClient.Builder()
-                .addInterceptor(loggingInterceptor)
-                .addInterceptor(BearerAuthenticationInterceptor())
-                .build()
-            retrofit = Retrofit.Builder().baseUrl("https://qiita.com/").addConverterFactory(
-                GsonConverterFactory.create()).addCallAdapterFactory(RxJava2CallAdapterFactory.create()).client(client).build()
-        }
-        return retrofit
+        return retrofit.create(UserInfoService::class.java)?.authenticatedUser()
     }
 
     interface UserInfoService {
