@@ -1,43 +1,36 @@
 package cloudeleven.space.a201811test_auth01
 
-import android.app.Application
 import android.content.Context
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
-import io.reactivex.observers.DisposableObserver
-import io.reactivex.schedulers.Schedulers
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Query
+import cloudeleven.space.a201811test_auth01.controllers.LoginController
+import cloudeleven.space.a201811test_auth01.models.LoginModel
 
 class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
-    private val compositeDisposable: CompositeDisposable = CompositeDisposable()
+    private lateinit var loginController: LoginController
+    private lateinit var loginModel: LoginModel
+
     private var onTokenRetrievedListener: OnTokenRetrievedListener? = null
 
     interface OnTokenRetrievedListener {
-        fun onTokenRetrieved(code: String)
+        fun onTokenRetrieved(token: String)
     }
     fun setOnTokenRetrievedListener(listener: OnTokenRetrievedListener) {
         this.onTokenRetrievedListener = listener
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        loginController = LoginController()
+        loginModel = LoginModel(loginController)
+        loginController hasView this
+        loginController hasModel loginModel
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.login_fragment, container, false)
@@ -46,10 +39,15 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
     }
     override fun onStop() {
         super.onStop()
-        compositeDisposable.clear()
+        loginController.onStop()
     }
 
-    fun loadLoginPage(view: View) {
+    fun doWhenAccessTokenReady() {
+        android.util.Log.d("xtc", String.format("Fragment doWhenAccessTokenReady called with %s", loginModel.tokenEntity.token))
+        onTokenRetrievedListener?.onTokenRetrieved(loginModel.tokenEntity.token)
+    }
+
+    private fun loadLoginPage(view: View) {
         val clientId = resources.getString(R.string.client_id)
         val scope = resources.getString(R.string.scope)
         val state = resources.getString(R.string.state)
@@ -68,60 +66,16 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
     }
 
     override fun onCodeRetrieved(code: String) {
-        requestToken(code)
+        loginController.requestTokenByCode(code)
     }
 
-
-    private fun requestToken(code: String) {
-        val disposable: Disposable = requestTokenByCode(code)!!.subscribeOn(Schedulers.io()).observeOn(
-            AndroidSchedulers.mainThread()).subscribeWith(object : DisposableObserver<AccessTokenEntity?>() {
-            override fun onNext(t: AccessTokenEntity) {
-//                    hideProgressBar()
-                onTokenRetrievedListener?.onTokenRetrieved(t.token)
-            }
-
-            override fun onStart() {
-//                    showProgressBar()
-            }
-
-            override fun onComplete() {
-            }
-
-            override fun onError(e: Throwable) {
-//                    main_activity_progress_bar.visibility = View.GONE
-//                    Toast.makeText(this@MainActivity, "Error retrieving data: ${e.message}", Toast.LENGTH_SHORT)
-            }
-        })
-        compositeDisposable.add(disposable)
-    }
-    private var mRetrofit: Retrofit? = null
-
-    private fun requestTokenByCode(code: String): Observable<AccessTokenEntity>? {
-        if (mRetrofit == null) {
-            val loggingInterceptor = HttpLoggingInterceptor()
-            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
-            val client = OkHttpClient.Builder().addInterceptor(loggingInterceptor).build()
-            mRetrofit = Retrofit.Builder().baseUrl("https://qiita.com/").addConverterFactory(
-                GsonConverterFactory.create()).addCallAdapterFactory(RxJava2CallAdapterFactory.create()).client(client).build()
-        }
-        val clientId = App.applicationContext().resources.getString(R.string.client_id)
-        val clientSecret = App.applicationContext().resources.getString(R.string.client_secret)
-        val request = AccessTokenRequestModel(clientId, clientSecret, code)
-        return mRetrofit?.create(AuthService::class.java)?.accessTokens(request)
+    fun showError() {
+        showToast(App.applicationContext(), getString(R.string.error_getting_results, loginModel.httpException.message))
     }
 
-    interface AuthService {
-        @POST("api/v2/access_tokens")
-        fun accessTokens(@Body accessTokenRequestModel: AccessTokenRequestModel): Observable<AccessTokenEntity>
+    private fun showToast(context: Context, msg: String) {
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
     }
-
-    data class AccessTokenRequestModel(var client_id: String,
-                                       var client_secret: String,
-                                       var code: String)
-    data class AccessTokenEntity(val client_id: String,
-                                 val token: String)
-
-
 }
 
 class LoginWebViewClient : WebViewClient() {
@@ -132,22 +86,6 @@ class LoginWebViewClient : WebViewClient() {
     fun setOnCodeRetrievedListener(listener: OnCodeRetrievedListener) {
         this.onCodeRetrievedListener = listener
     }
-    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-        if (view != null && view is WebView) {
-            val uri = view.url
-            val uriString = uri.toString()
-            android.util.Log.d("xtc", String.format("%s : %s", "load", uriString))
-            val redirectUri = App.applicationContext().resources.getString(R.string.redirect_uri)
-            if (uriString.startsWith(redirectUri)) {
-                val code = android.net.Uri.parse(uriString).getQueryParameter("code")
-                android.util.Log.d("xtc", String.format("code = %s", code))
-                onCodeRetrievedListener?.onCodeRetrieved(code)
-                return true
-            }
-        }
-        android.util.Log.d("xtc", "view is null or not webview or not redirect")
-        return super.shouldOverrideUrlLoading(view, request)
-    }
 
     override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
         if (url != null && !url.isEmpty()) {
@@ -156,7 +94,9 @@ class LoginWebViewClient : WebViewClient() {
             if (url.startsWith(redirectUri)) {
                 val code = android.net.Uri.parse(url).getQueryParameter("code")
                 android.util.Log.d("xtc", String.format("code = %s", code))
-                onCodeRetrievedListener?.onCodeRetrieved(code)
+                code?.let {
+                    onCodeRetrievedListener?.onCodeRetrieved(it)
+                }
                 return
             }
         }

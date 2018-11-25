@@ -25,12 +25,13 @@ class MainActivity : AppCompatActivity(), LoginFragment.OnTokenRetrievedListener
         }
     }
     override fun onTokenRetrieved(token: String) {
+        android.util.Log.d("xtc", "Activity onTokenRetrieved called")
         val pref = getSharedPreferences("auth", Context.MODE_PRIVATE)
         pref.edit().putString("token", token).apply()
         showUserInfoFragment()
     }
 
-    fun showUserInfoFragment() {
+    private fun showUserInfoFragment() {
         val fragment = UserInfoFragment()
 //        val bundle = Bundle()
 //        bundle.putString("token", token)
