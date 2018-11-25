@@ -47,6 +47,11 @@ class UserInfoFragment : Fragment() {
         return view
     }
 
+    override fun onStop() {
+        super.onStop()
+        compositeDisposable.clear()
+    }
+
     private fun showUserInfo(info: UserInfoEntity) {
         android.util.Log.d("xtc", String.format("userinfo = %s", info.toString()))
         qiita_id.text = "${UserInfoFragment.Constants.ID.capitalize()}: ${info.id}"
