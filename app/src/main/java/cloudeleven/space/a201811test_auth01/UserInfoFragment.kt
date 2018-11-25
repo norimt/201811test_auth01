@@ -6,8 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import cloudeleven.space.a201811test_auth01.presenters.UserInfoPresenter
+import cloudeleven.space.a201811test_auth01.viewmodel.UserInfoViewModel
 import cloudeleven.space.a201811test_auth01.models.UserInfoModel
+import io.reactivex.functions.Consumer
 import kotlinx.android.synthetic.main.fragment_user_info.*
 
 
@@ -25,22 +26,32 @@ class UserInfoFragment : Fragment() {
         const val WEBSITE = "website_url"
     }
 
-    private lateinit var userInfoPresenter: UserInfoPresenter
+    private lateinit var userInfoViewModel: UserInfoViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        userInfoPresenter = UserInfoPresenter(UserInfoModel())
-        userInfoPresenter hasView this
+        userInfoViewModel = UserInfoViewModel(UserInfoModel())
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        listenToObservables()
         val view = inflater.inflate(R.layout.fragment_user_info, container, false)
-        userInfoPresenter.getUserInfo()
+        userInfoViewModel.getUserInfo()
         return view
+    }
+    private fun listenToObservables() {
+        userInfoViewModel.userInfoObservable.subscribe(Consumer {
+            //            hideProgressBar()
+            showUserInfo(it)
+        })
+        userInfoViewModel.userInfoErrorObservable.subscribe(Consumer {
+            //            hideProgressBar()
+            showErrorMessage(it.message())
+        })
     }
 
     override fun onStop() {
         super.onStop()
-        userInfoPresenter.onStop()
+        userInfoViewModel.cancelNetworkConnections()
     }
 
     fun showUserInfo(info: UserInfoModel.UserInfoEntity) {

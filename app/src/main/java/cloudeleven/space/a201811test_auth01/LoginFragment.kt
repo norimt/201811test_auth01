@@ -8,11 +8,12 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
-import cloudeleven.space.a201811test_auth01.presenters.LoginPresenter
+import cloudeleven.space.a201811test_auth01.viewmodel.LoginViewModel
 import cloudeleven.space.a201811test_auth01.models.LoginModel
+import io.reactivex.functions.Consumer
 
 class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
-    private lateinit var loginPresenter: LoginPresenter
+    private lateinit var loginViewModel: LoginViewModel
 
     private var onTokenRetrievedListener: OnTokenRetrievedListener? = null
 
@@ -25,22 +26,28 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        loginPresenter = LoginPresenter(LoginModel())
-        loginPresenter hasView this
+        loginViewModel = LoginViewModel(LoginModel())
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        listenToObservables()
         val view = inflater.inflate(R.layout.login_fragment, container, false)
         loadLoginPage(view)
         return view
     }
-    override fun onStop() {
-        super.onStop()
-        loginPresenter.onStop()
+    private fun listenToObservables() {
+        loginViewModel.tokenObservable.subscribe(Consumer {
+//            hideProgressBar()
+            onTokenRetrievedListener?.onTokenRetrieved(it)
+        })
+        loginViewModel.tokenErrorObservable.subscribe(Consumer {
+//            hideProgressBar()
+            showErrorMessage(it.message())
+        })
     }
 
-    fun doWhenAccessTokenReady(token: String) {
-        android.util.Log.d("xtc", String.format("Fragment doWhenAccessTokenReady called with %s", token))
-        onTokenRetrievedListener?.onTokenRetrieved(token)
+    override fun onStop() {
+        super.onStop()
+        loginViewModel.cancelNetworkConnections()
     }
 
     private fun loadLoginPage(view: View) {
@@ -62,7 +69,7 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
     }
 
     override fun onCodeRetrieved(code: String) {
-        loginPresenter.retrieveTokenByCode(code)
+        loginViewModel.retrieveTokenByCode(code)
     }
 
     fun showErrorMessage(errorMsg: String) {

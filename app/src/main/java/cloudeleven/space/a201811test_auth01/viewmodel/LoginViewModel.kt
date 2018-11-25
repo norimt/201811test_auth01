@@ -1,23 +1,23 @@
-package cloudeleven.space.a201811test_auth01.presenters
+package cloudeleven.space.a201811test_auth01.viewmodel
 
-import cloudeleven.space.a201811test_auth01.LoginFragment
 import cloudeleven.space.a201811test_auth01.models.LoginModel
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.observers.DisposableSingleObserver
+import io.reactivex.subjects.PublishSubject
+import retrofit2.HttpException
 
-class LoginPresenter() {
-    private lateinit var view: LoginFragment
+class LoginViewModel() {
+    lateinit var tokenObservable: PublishSubject<String>
+    lateinit var tokenErrorObservable: PublishSubject<HttpException>
     private lateinit var model: LoginModel
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()
     private var schedulersWrapper = SchedulersWrapper()
 
-    infix fun hasView(loginFragment: LoginFragment) {
-        this.view = loginFragment
-    }
-
     constructor(loginModel: LoginModel) : this() {
         this.model = loginModel
+        tokenObservable = PublishSubject.create()
+        tokenErrorObservable = PublishSubject.create()
     }
 
     fun retrieveTokenByCode(code: String) {
@@ -25,17 +25,17 @@ class LoginPresenter() {
             schedulersWrapper.main()).subscribeWith(object : DisposableSingleObserver<LoginModel.AccessTokenEntity?>() {
 
             override fun onSuccess(t: LoginModel.AccessTokenEntity) {
-                view.doWhenAccessTokenReady(t.token)
+                tokenObservable.onNext(t.token)
             }
 
             override fun onError(e: Throwable) {
-                view.showErrorMessage(e.message!!)
+                tokenErrorObservable.onNext(e as HttpException)
             }
         })
         compositeDisposable.add(disposable)
     }
 
-    fun onStop() {
+    fun cancelNetworkConnections() {
         compositeDisposable.clear()
     }
 }
