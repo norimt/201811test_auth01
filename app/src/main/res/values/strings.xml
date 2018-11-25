@@ -5,5 +5,4 @@
     <string name="scope">read_qiita</string>
     <string name="state">your_state</string>
     <string name="redirect_uri">your_website</string>
-    <string name="error_getting_results">Error getting results: %s</string>
 </resources>

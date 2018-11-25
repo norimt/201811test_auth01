@@ -2,50 +2,26 @@ package cloudeleven.space.a201811test_auth01.models
 
 import cloudeleven.space.a201811test_auth01.App
 import cloudeleven.space.a201811test_auth01.R
-import cloudeleven.space.a201811test_auth01.SchedulersWrapper
-import cloudeleven.space.a201811test_auth01.controllers.LoginController
 import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
-import io.reactivex.observers.DisposableSingleObserver
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 
-class LoginModel(val controller: LoginController) {
+class LoginModel() {
     private var retrofit: Retrofit? = null
-    var tokenEntity = AccessTokenEntity("","")
-    lateinit var httpException: HttpException
-    private val compositeDisposable: CompositeDisposable = CompositeDisposable()
-    private var schedulersWrapper = SchedulersWrapper()
 
-    fun retrieveTokenByCode(code: String) {
-        val disposable: Disposable = requestTokenByCode(code)!!.subscribeOn(schedulersWrapper.io()).observeOn(
-            schedulersWrapper.main()).subscribeWith(object : DisposableSingleObserver<AccessTokenEntity?>() {
-
-            override fun onSuccess(t: AccessTokenEntity) {
-                tokenEntity = t
-                controller.doWhenAccessTokenReady()
-            }
-
-            override fun onError(e: Throwable) {
-                httpException = e as HttpException
-                controller.doWhenThereIsErrorFetchingToken()
-            }
-        })
-        compositeDisposable.add(disposable)
+    fun requestTokenByCode(code: String): Single<AccessTokenEntity>? {
+        val clientId = App.applicationContext().resources.getString(R.string.client_id)
+        val clientSecret = App.applicationContext().resources.getString(R.string.client_secret)
+        val request = AccessTokenRequestModel(clientId, clientSecret, code)
+        return getRetrofit()?.create(AuthService::class.java)?.accessTokens(request)
     }
 
-    fun stopRetrievingToken() {
-        compositeDisposable.clear()
-    }
-
-    private fun requestTokenByCode(code: String): Single<AccessTokenEntity>? {
+    private fun getRetrofit(): Retrofit? {
         if (retrofit == null) {
             val loggingInterceptor = HttpLoggingInterceptor()
             loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
@@ -53,10 +29,7 @@ class LoginModel(val controller: LoginController) {
             retrofit = Retrofit.Builder().baseUrl("https://qiita.com/").addConverterFactory(
                 GsonConverterFactory.create()).addCallAdapterFactory(RxJava2CallAdapterFactory.create()).client(client).build()
         }
-        val clientId = App.applicationContext().resources.getString(R.string.client_id)
-        val clientSecret = App.applicationContext().resources.getString(R.string.client_secret)
-        val request = AccessTokenRequestModel(clientId, clientSecret, code)
-        return retrofit?.create(AuthService::class.java)?.accessTokens(request)
+        return retrofit
     }
 
     interface AuthService {

@@ -1,4 +1,4 @@
-package cloudeleven.space.a201811test_auth01
+package cloudeleven.space.a201811test_auth01.presenters
 
 import io.reactivex.Scheduler
 import io.reactivex.android.schedulers.AndroidSchedulers

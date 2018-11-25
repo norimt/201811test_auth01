@@ -1,6 +1,5 @@
 package cloudeleven.space.a201811test_auth01
 
-import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
@@ -9,12 +8,11 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
-import cloudeleven.space.a201811test_auth01.controllers.LoginController
+import cloudeleven.space.a201811test_auth01.presenters.LoginPresenter
 import cloudeleven.space.a201811test_auth01.models.LoginModel
 
 class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
-    private lateinit var loginController: LoginController
-    private lateinit var loginModel: LoginModel
+    private lateinit var loginPresenter: LoginPresenter
 
     private var onTokenRetrievedListener: OnTokenRetrievedListener? = null
 
@@ -27,10 +25,8 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        loginController = LoginController()
-        loginModel = LoginModel(loginController)
-        loginController hasView this
-        loginController hasModel loginModel
+        loginPresenter = LoginPresenter(LoginModel())
+        loginPresenter hasView this
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.login_fragment, container, false)
@@ -39,12 +35,12 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
     }
     override fun onStop() {
         super.onStop()
-        loginController.onStop()
+        loginPresenter.onStop()
     }
 
-    fun doWhenAccessTokenReady() {
-        android.util.Log.d("xtc", String.format("Fragment doWhenAccessTokenReady called with %s", loginModel.tokenEntity.token))
-        onTokenRetrievedListener?.onTokenRetrieved(loginModel.tokenEntity.token)
+    fun doWhenAccessTokenReady(token: String) {
+        android.util.Log.d("xtc", String.format("Fragment doWhenAccessTokenReady called with %s", token))
+        onTokenRetrievedListener?.onTokenRetrieved(token)
     }
 
     private fun loadLoginPage(view: View) {
@@ -58,7 +54,7 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
 
         val client = LoginWebViewClient()
         client.setOnCodeRetrievedListener(this)
-        val webview = view.findViewById<WebView>(R.id.webview).apply {
+        view.findViewById<WebView>(R.id.webview).apply {
             webViewClient = client
             settings.javaScriptEnabled = true
             loadUrl(uri)
@@ -66,15 +62,11 @@ class LoginFragment : Fragment(), LoginWebViewClient.OnCodeRetrievedListener {
     }
 
     override fun onCodeRetrieved(code: String) {
-        loginController.requestTokenByCode(code)
+        loginPresenter.retrieveTokenByCode(code)
     }
 
-    fun showError() {
-        showToast(App.applicationContext(), getString(R.string.error_getting_results, loginModel.httpException.message))
-    }
-
-    private fun showToast(context: Context, msg: String) {
-        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    fun showErrorMessage(errorMsg: String) {
+        Toast.makeText(App.applicationContext(), "Error retrieving data: $errorMsg", Toast.LENGTH_SHORT).show()
     }
 }
 

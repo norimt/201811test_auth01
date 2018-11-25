@@ -1,13 +1,12 @@
 package cloudeleven.space.a201811test_auth01
 
-import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import cloudeleven.space.a201811test_auth01.controllers.UserInfoController
+import cloudeleven.space.a201811test_auth01.presenters.UserInfoPresenter
 import cloudeleven.space.a201811test_auth01.models.UserInfoModel
 import kotlinx.android.synthetic.main.fragment_user_info.*
 
@@ -26,29 +25,25 @@ class UserInfoFragment : Fragment() {
         const val WEBSITE = "website_url"
     }
 
-    private lateinit var userInfoController: UserInfoController
-    private lateinit var userInfoModel: UserInfoModel
+    private lateinit var userInfoPresenter: UserInfoPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        userInfoController = UserInfoController()
-        userInfoModel = UserInfoModel(userInfoController)
-        userInfoController hasView this
-        userInfoController hasModel userInfoModel
+        userInfoPresenter = UserInfoPresenter(UserInfoModel())
+        userInfoPresenter hasView this
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_user_info, container, false)
-        userInfoController.getUserInfo()
+        userInfoPresenter.getUserInfo()
         return view
     }
 
     override fun onStop() {
         super.onStop()
-        userInfoController.onStop()
+        userInfoPresenter.onStop()
     }
 
-    fun showUserInfo() {
-        val info = userInfoModel.userInfoEntity
+    fun showUserInfo(info: UserInfoModel.UserInfoEntity) {
         android.util.Log.d("xtc", String.format("userinfo = %s", info.toString()))
         qiita_id.text = "${UserInfoFragment.Constants.ID.capitalize()}: ${info.id}"
         perm_id.text = "${UserInfoFragment.Constants.PERM_ID.capitalize()}: ${info.permanent_id}"
@@ -62,11 +57,7 @@ class UserInfoFragment : Fragment() {
         website.text = "${UserInfoFragment.Constants.WEBSITE.capitalize()}: ${info.website_url}"
     }
 
-    fun showError() {
-        showToast(App.applicationContext(), getString(R.string.error_getting_results, userInfoModel.httpException.message))
-    }
-
-    private fun showToast(context: Context, msg: String) {
-        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    fun showErrorMessage(errorMsg: String) {
+        Toast.makeText(App.applicationContext(), "Error retrieving data: $errorMsg", Toast.LENGTH_SHORT).show()
     }
 }
