@@ -18,7 +18,7 @@ class ViewController: UIViewController {
         label.center = CGPoint(x: 160, y: 285)
         label.textAlignment = .center
         label.font = label.font.withSize(25)
-        label.text = CommonExpectKt.createApplicationScreenMessage()
+        label.text = String(format: "platform name: %@", Device().platformName())
         view.addSubview(label)
     }
 

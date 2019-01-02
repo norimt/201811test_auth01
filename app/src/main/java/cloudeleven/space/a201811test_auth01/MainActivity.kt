@@ -3,7 +3,7 @@ package cloudeleven.space.a201811test_auth01
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import space.cloudeleven.testauth01.sharedcode.createApplicationScreenMessage
+import space.cloudeleven.testauth01.sharedcode.Device
 
 
 class MainActivity : AppCompatActivity(), LoginFragment.OnTokenRetrievedListener {
@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity(), LoginFragment.OnTokenRetrievedListener
         } else {
             showUserInfoFragment()
         }
-        android.util.Log.d("xtc", createApplicationScreenMessage())
+        android.util.Log.d("xtc", String.format("platform name: %s", Device().platformName()))
     }
     override fun onTokenRetrieved(token: String) {
         android.util.Log.d("xtc", "Activity onTokenRetrieved called")
