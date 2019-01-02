@@ -4,6 +4,11 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/201811test_auth01.iml" filepath="$PROJECT_DIR$/201811test_auth01.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/shared/shared.iml" filepath="$PROJECT_DIR$/shared/shared.iml" />
+      <module fileurl="file://$PROJECT_DIR$/shared/shared_androidMain.iml" filepath="$PROJECT_DIR$/shared/shared_androidMain.iml" group="shared" />
+      <module fileurl="file://$PROJECT_DIR$/shared/shared_androidTest.iml" filepath="$PROJECT_DIR$/shared/shared_androidTest.iml" group="shared" />
+      <module fileurl="file://$PROJECT_DIR$/shared/shared_commonMain.iml" filepath="$PROJECT_DIR$/shared/shared_commonMain.iml" group="shared" />
+      <module fileurl="file://$PROJECT_DIR$/shared/shared_commonTest.iml" filepath="$PROJECT_DIR$/shared/shared_commonTest.iml" group="shared" />
     </modules>
   </component>
 </project>
